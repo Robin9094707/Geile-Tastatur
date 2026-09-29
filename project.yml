@@ -1,0 +1,57 @@
+name: GeileTastatur
+
+options:
+  bundleIdPrefix: com.robin9094707
+  deploymentTarget:
+    iOS: "18.0"
+  xcodeVersion: "26.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: NO
+
+targets:
+  GeileTastatur:
+    type: application
+    platform: iOS
+    sources:
+      - path: Shared
+      - path: GeileTastaturApp
+    info:
+      path: GeileTastaturApp/Info.plist
+    entitlements:
+      path: GeileTastaturApp/GeileTastatur.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.robin9094707.GeileTastatur
+        PRODUCT_NAME: GeileTastatur
+        INFOPLIST_FILE: GeileTastaturApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: GeileTastaturApp/GeileTastatur.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - target: GeileTastaturKeyboard
+        embed: true
+
+  GeileTastaturKeyboard:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Shared
+      - path: KeyboardExtension
+    info:
+      path: KeyboardExtension/Info.plist
+    entitlements:
+      path: KeyboardExtension/Keyboard.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.robin9094707.GeileTastatur.Keyboard
+        PRODUCT_NAME: GeileTastaturKeyboard
+        INFOPLIST_FILE: KeyboardExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: KeyboardExtension/Keyboard.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
