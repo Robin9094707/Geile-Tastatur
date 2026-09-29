@@ -62,6 +62,7 @@ private struct HomeView: View {
                                 .foregroundStyle(.orange)
 
                             Button {
+                                HapticEngine.strong()
                                 voiceBridge.isBridgeActive ? voiceBridge.stopBridge() : voiceBridge.startBridge()
                             } label: {
                                 Label(
@@ -149,6 +150,7 @@ private struct ClipboardManagerView: View {
 
                     Button {
                         SharedStore.shared.addClipboardText(newText, pinned: true)
+                        HapticEngine.success()
                         newText = ""
                         reload()
                     } label: {
@@ -184,6 +186,7 @@ private struct ClipboardManagerView: View {
                             .swipeActions(edge: .leading) {
                                 Button {
                                     SharedStore.shared.togglePin(id: entry.id)
+                                    HapticEngine.softTap()
                                     reload()
                                 } label: {
                                     Label(entry.isPinned ? "Lösen" : "Pinnen", systemImage: "pin")
@@ -222,6 +225,7 @@ private struct ClipboardManagerView: View {
                 Button("Löschen", role: .destructive) {
                     if let pendingDelete {
                         SharedStore.shared.deleteClipboard(id: pendingDelete.id)
+                        HapticEngine.warning()
                     }
                     pendingDelete = nil
                     reload()
@@ -235,6 +239,7 @@ private struct ClipboardManagerView: View {
             ) {
                 Button("Verlauf löschen", role: .destructive) {
                     SharedStore.shared.clearUnpinnedClipboard()
+                    HapticEngine.warning()
                     reload()
                 }
                 Button("Abbrechen", role: .cancel) {}
@@ -253,6 +258,7 @@ private struct SettingsView: View {
     @State private var numberRow = SharedStore.shared.numberRowEnabled
     @State private var aiSuggestions = SharedStore.shared.aiSuggestionsEnabled
     @State private var cleanupTranscript = SharedStore.shared.cleanupTranscriptEnabled
+    @State private var haptics = SharedStore.shared.hapticsEnabled
     @State private var keySaved = false
 
     var body: some View {
@@ -265,6 +271,7 @@ private struct SettingsView: View {
 
                     Button {
                         SharedStore.shared.apiKey = apiKey
+                        HapticEngine.success()
                         keySaved = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                             keySaved = false
@@ -282,11 +289,19 @@ private struct SettingsView: View {
                     Toggle("Zahlenreihe dauerhaft anzeigen", isOn: $numberRow)
                         .onChange(of: numberRow) { _, value in
                             SharedStore.shared.numberRowEnabled = value
+                            HapticEngine.softTap()
                         }
 
                     Toggle("KI-Schreibvorschläge", isOn: $aiSuggestions)
                         .onChange(of: aiSuggestions) { _, value in
                             SharedStore.shared.aiSuggestionsEnabled = value
+                            HapticEngine.softTap()
+                        }
+
+                    Toggle("Feine Haptik & Tastenfeedback", isOn: $haptics)
+                        .onChange(of: haptics) { _, value in
+                            SharedStore.shared.hapticsEnabled = value
+                            if value { HapticEngine.success() }
                         }
 
                     Text("KI-Vorschläge sind standardmäßig aus und werden nur auf Knopfdruck angefragt. Dafür wird der Textkontext an OpenAI gesendet.")
@@ -298,6 +313,7 @@ private struct SettingsView: View {
                     Toggle("Diktat intelligent bereinigen", isOn: $cleanupTranscript)
                         .onChange(of: cleanupTranscript) { _, value in
                             SharedStore.shared.cleanupTranscriptEnabled = value
+                            HapticEngine.softTap()
                         }
 
                     LabeledContent("Transkription", value: SharedStore.shared.transcriptionModel)
