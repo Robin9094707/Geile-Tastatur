@@ -7,6 +7,8 @@ Eine systemweite iOS-QWERTZ-Tastatur mit Apple-artigem Layout, Zwischenablage-Ve
 - Echte iOS Custom Keyboard Extension
 - Deutsches QWERTZ mit Ü / Ö / Ä
 - Apple-artiges adaptives Hell-/Dunkel-Design
+- Feine Haptik für normale Tasten, Aktionen, Erfolg, Warnung und Fehler
+- Quick-Settings direkt in der Tastatur für Zahlenreihe, KI, Haptik und API-Key
 - Liquid Glass in der Hauptapp auf iOS 26+
 - Optionale permanente Zahlenreihe
 - Zwischenablage-Verlauf mit bis zu 100 Einträgen und Pins
@@ -14,7 +16,7 @@ Eine systemweite iOS-QWERTZ-Tastatur mit Apple-artigem Layout, Zwischenablage-Ve
 - Optionale intelligente Diktat-Bereinigung, z. B. Selbstkorrekturen wie „nein, ich meinte …“
 - Optionale KI-Schreibvorschläge über die Responses API
 - API-Key wird nie im Repository hinterlegt
-- GitHub Actions erzeugt eine unsignierte IPA zum anschließenden Signieren/Sideloaden
+- GitHub Actions erzeugt eine **ad-hoc vorsignierte und mit codesign validierte Sideload-Ready IPA**
 
 ## Wichtige iOS-Grenze bei Spracheingabe
 
@@ -57,4 +59,6 @@ xcodegen generate
 xcodebuild -project GeileTastatur.xcodeproj -scheme GeileTastatur -sdk iphoneos -configuration Release
 ```
 
-Die GitHub Action baut ohne Apple-Signatur und verpackt das Ergebnis als `GeileTastatur-unsigned.ipa`. Für eine direkte Installation auf normalen iPhones muss diese IPA anschließend mit einem gültigen Apple-Entwicklerprofil signiert bzw. von einem Sideloading-Tool neu signiert werden.
+Die GitHub Action baut zunächst ohne Provisioning-Profil, signiert danach **zuerst die Keyboard-Extension und anschließend die Haupt-App ad-hoc**, prüft das komplette Bundle mit `codesign --verify --deep --strict` und verpackt es als `GeileTastatur-SideloadReady.ipa`.
+
+Für die Installation auf einem normalen iPhone muss die IPA weiterhin mit deinem Apple-Entwicklerprofil durch AltStore/SideStore/Sideloadly oder ein anderes geeignetes Signing-Werkzeug neu signiert werden. Wichtig: Das Signing-Werkzeug muss **eingebettete App Extensions** mit signieren. Eine iOS-Systemtastatur kann technisch nicht ohne Keyboard-Extension gebaut werden.
