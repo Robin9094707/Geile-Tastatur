@@ -25,6 +25,7 @@ final class SharedStore {
             "numberRowEnabled": false,
             "aiSuggestionsEnabled": false,
             "cleanupTranscriptEnabled": true,
+            "hapticsEnabled": true,
             "bridgeActive": false,
             "voiceRecording": false,
             "voiceCommand": "",
@@ -54,6 +55,11 @@ final class SharedStore {
     var cleanupTranscriptEnabled: Bool {
         get { defaults.bool(forKey: "cleanupTranscriptEnabled") }
         set { defaults.set(newValue, forKey: "cleanupTranscriptEnabled") }
+    }
+
+    var hapticsEnabled: Bool {
+        get { defaults.bool(forKey: "hapticsEnabled") }
+        set { defaults.set(newValue, forKey: "hapticsEnabled") }
     }
 
     var textModel: String {
