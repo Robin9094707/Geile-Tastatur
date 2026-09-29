@@ -90,6 +90,7 @@ final class VoiceBridgeManager: ObservableObject {
             isBridgeActive = true
             isRecording = false
             statusText = "Voice Bridge aktiv – Mikrofon wartet auf Tastatur"
+            HapticEngine.success()
             lastCommandNonce = SharedStore.shared.voiceCommandNonce
             startCommandPolling()
         } catch {
@@ -150,6 +151,7 @@ final class VoiceBridgeManager: ObservableObject {
             fileLock.unlock()
 
             SharedStore.shared.voiceRecording = true
+            HapticEngine.strong()
             DispatchQueue.main.async { [weak self] in
                 self?.isRecording = true
                 self?.statusText = "Sprich jetzt …"
@@ -202,12 +204,14 @@ final class VoiceBridgeManager: ObservableObject {
                 await MainActor.run {
                     self?.statusText = "Fertig – Text wurde an die Tastatur übergeben"
                     self?.lastError = nil
+                    HapticEngine.success()
                 }
             } catch {
                 try? FileManager.default.removeItem(at: url)
                 await MainActor.run {
                     self?.lastError = error.localizedDescription
                     self?.statusText = "Transkription fehlgeschlagen"
+                    HapticEngine.error()
                 }
             }
         }
