@@ -1,0 +1,74 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Geile Tastatur
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: |
+          brew update
+          brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build unsigned iOS app
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project GeileTastatur.xcodeproj \
+            -scheme GeileTastatur \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            clean build | tee xcodebuild.log
+
+      - name: Verify keyboard extension
+        run: |
+          test -d "build/Build/Products/Release-iphoneos/GeileTastatur.app"
+          test -d "build/Build/Products/Release-iphoneos/GeileTastatur.app/PlugIns/GeileTastaturKeyboard.appex"
+          echo "App and keyboard extension are present."
+
+      - name: Package IPA
+        run: |
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R "build/Build/Products/Release-iphoneos/GeileTastatur.app" Payload/
+          /usr/bin/zip -qry GeileTastatur-unsigned.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeileTastatur-IPA
+          path: GeileTastatur-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+          if-no-files-found: ignore
