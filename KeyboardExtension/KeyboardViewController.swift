@@ -12,6 +12,7 @@ final class KeyboardControllerModel: ObservableObject {
     @Published var isShifted = false
     @Published var numberRowEnabled = SharedStore.shared.numberRowEnabled
     @Published var aiSuggestionsEnabled = SharedStore.shared.aiSuggestionsEnabled
+    @Published var hapticsEnabled = SharedStore.shared.hapticsEnabled
     @Published var suggestions: [String] = []
     @Published var clipboardEntries: [ClipboardEntry] = SharedStore.shared.clipboardEntries
     @Published var showClipboard = false
@@ -32,6 +33,7 @@ final class KeyboardControllerModel: ObservableObject {
     func refreshSettings() {
         numberRowEnabled = SharedStore.shared.numberRowEnabled
         aiSuggestionsEnabled = SharedStore.shared.aiSuggestionsEnabled
+        hapticsEnabled = SharedStore.shared.hapticsEnabled
         bridgeActive = SharedStore.shared.bridgeActive
         recording = SharedStore.shared.voiceRecording
         clipboardEntries = SharedStore.shared.clipboardEntries
@@ -101,6 +103,7 @@ final class KeyboardControllerModel: ObservableObject {
 
     func setHaptics(_ enabled: Bool) {
         SharedStore.shared.hapticsEnabled = enabled
+        hapticsEnabled = enabled
         if enabled { HapticEngine.success() }
     }
 
@@ -467,9 +470,9 @@ struct KeyboardRootView: View {
             quickToggle(
                 title: "Haptik",
                 systemName: "waveform.path",
-                isOn: SharedStore.shared.hapticsEnabled
+                isOn: model.hapticsEnabled
             ) {
-                model.setHaptics(!SharedStore.shared.hapticsEnabled)
+                model.setHaptics(!model.hapticsEnabled)
             }
 
             Button {
