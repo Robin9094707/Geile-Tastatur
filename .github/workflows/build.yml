@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Geile Tastatur
+    name: Build & Validate Geile Tastatur
     runs-on: macos-latest
     timeout-minutes: 30
 
@@ -31,7 +31,7 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build unsigned iOS app
+      - name: Build iOS app
         run: |
           set -o pipefail
           xcodebuild \
@@ -45,24 +45,49 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             clean build | tee xcodebuild.log
 
-      - name: Verify keyboard extension
+      - name: Verify bundle structure
         run: |
-          test -d "build/Build/Products/Release-iphoneos/GeileTastatur.app"
-          test -d "build/Build/Products/Release-iphoneos/GeileTastatur.app/PlugIns/GeileTastaturKeyboard.appex"
-          echo "App and keyboard extension are present."
+          APP="build/Build/Products/Release-iphoneos/GeileTastatur.app"
+          EXT="$APP/PlugIns/GeileTastaturKeyboard.appex"
+          test -d "$APP"
+          test -f "$APP/GeileTastatur"
+          test -d "$EXT"
+          test -f "$EXT/GeileTastaturKeyboard"
+          /usr/bin/file "$APP/GeileTastatur"
+          /usr/bin/file "$EXT/GeileTastaturKeyboard"
 
-      - name: Package IPA
+      - name: Ad-hoc sign nested extension and app
         run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release-iphoneos/GeileTastatur.app"
+          EXT="$APP/PlugIns/GeileTastaturKeyboard.appex"
+
+          /usr/bin/codesign --force --sign - --timestamp=none "$EXT"
+          /usr/bin/codesign --force --sign - --timestamp=none "$APP"
+
+          /usr/bin/codesign --verify --deep --strict --verbose=4 "$APP"
+          /usr/bin/codesign -dv --verbose=4 "$APP" 2>&1 | tee codesign-app.txt
+          /usr/bin/codesign -dv --verbose=4 "$EXT" 2>&1 | tee codesign-keyboard.txt
+
+      - name: Package sideload-ready IPA
+        run: |
+          set -euo pipefail
           rm -rf Payload
           mkdir -p Payload
           cp -R "build/Build/Products/Release-iphoneos/GeileTastatur.app" Payload/
-          /usr/bin/zip -qry GeileTastatur-unsigned.ipa Payload
+          /usr/bin/zip -qry GeileTastatur-SideloadReady.ipa Payload
+          shasum -a 256 GeileTastatur-SideloadReady.ipa | tee GeileTastatur-SideloadReady.sha256
+          unzip -t GeileTastatur-SideloadReady.ipa
 
-      - name: Upload IPA
+      - name: Upload sideload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: GeileTastatur-IPA
-          path: GeileTastatur-unsigned.ipa
+          name: GeileTastatur-SideloadReady
+          path: |
+            GeileTastatur-SideloadReady.ipa
+            GeileTastatur-SideloadReady.sha256
+            codesign-app.txt
+            codesign-keyboard.txt
           if-no-files-found: error
 
       - name: Upload build log on failure
