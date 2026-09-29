@@ -1,0 +1,11 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.xcarchive
+.DS_Store
+
+# XcodeGen
+GeileTastatur.xcodeproj/
