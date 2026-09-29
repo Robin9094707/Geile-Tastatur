@@ -15,6 +15,7 @@ final class KeyboardControllerModel: ObservableObject {
     @Published var suggestions: [String] = []
     @Published var clipboardEntries: [ClipboardEntry] = SharedStore.shared.clipboardEntries
     @Published var showClipboard = false
+    @Published var showQuickSettings = false
     @Published var bridgeActive = SharedStore.shared.bridgeActive
     @Published var recording = SharedStore.shared.voiceRecording
     @Published var statusMessage: String?
@@ -73,9 +74,46 @@ final class KeyboardControllerModel: ObservableObject {
     }
 
     func toggleClipboard() {
+        showQuickSettings = false
         showClipboard.toggle()
         clipboardEntries = SharedStore.shared.clipboardEntries
+        HapticEngine.action()
         playClick()
+    }
+
+    func toggleQuickSettings() {
+        showClipboard = false
+        showQuickSettings.toggle()
+        HapticEngine.action()
+    }
+
+    func setNumberRow(_ enabled: Bool) {
+        SharedStore.shared.numberRowEnabled = enabled
+        numberRowEnabled = enabled
+        HapticEngine.softTap()
+    }
+
+    func setAISuggestions(_ enabled: Bool) {
+        SharedStore.shared.aiSuggestionsEnabled = enabled
+        aiSuggestionsEnabled = enabled
+        HapticEngine.softTap()
+    }
+
+    func setHaptics(_ enabled: Bool) {
+        SharedStore.shared.hapticsEnabled = enabled
+        if enabled { HapticEngine.success() }
+    }
+
+    func importAPIKeyFromPasteboard() {
+        guard let value = currentPasteboardText()?.trimmingCharacters(in: .whitespacesAndNewlines),
+              value.hasPrefix("sk-"), value.count > 20 else {
+            HapticEngine.error()
+            flash("Kein gültiger OpenAI-Key in der Ablage")
+            return
+        }
+        SharedStore.shared.apiKey = value
+        HapticEngine.success()
+        flash("OpenAI-Key lokal gespeichert")
     }
 
     func captureSystemPasteboard() {
@@ -189,7 +227,9 @@ final class KeyboardViewController: UIInputViewController, UIInputViewAudioFeedb
         }
         model.playClick = {
             UIDevice.current.playInputClick()
+            HapticEngine.key()
         }
+        HapticEngine.prepare()
 
         installKeyboardView()
         startPolling()
@@ -317,6 +357,10 @@ struct KeyboardRootView: View {
                 clipboardStrip
             }
 
+            if model.showQuickSettings {
+                quickSettingsStrip
+            }
+
             if model.page == .letters && model.numberRowEnabled {
                 numberRow
             }
@@ -341,6 +385,10 @@ struct KeyboardRootView: View {
         HStack(spacing: 6) {
             toolbarButton(systemName: model.showClipboard ? "keyboard" : "doc.on.clipboard") {
                 model.toggleClipboard()
+            }
+
+            toolbarButton(systemName: model.showQuickSettings ? "xmark" : "gearshape.fill") {
+                model.toggleQuickSettings()
             }
 
             if let status = model.statusMessage {
@@ -396,6 +444,70 @@ struct KeyboardRootView: View {
             .accessibilityLabel(model.recording ? "Diktat stoppen" : "OpenAI Diktat starten")
         }
         .frame(height: 36)
+    }
+
+    private var quickSettingsStrip: some View {
+        HStack(spacing: 7) {
+            quickToggle(
+                title: "123",
+                systemName: "number",
+                isOn: model.numberRowEnabled
+            ) {
+                model.setNumberRow(!model.numberRowEnabled)
+            }
+
+            quickToggle(
+                title: "KI",
+                systemName: "sparkles",
+                isOn: model.aiSuggestionsEnabled
+            ) {
+                model.setAISuggestions(!model.aiSuggestionsEnabled)
+            }
+
+            quickToggle(
+                title: "Haptik",
+                systemName: "waveform.path",
+                isOn: SharedStore.shared.hapticsEnabled
+            ) {
+                model.setHaptics(!SharedStore.shared.hapticsEnabled)
+            }
+
+            Button {
+                model.importAPIKeyFromPasteboard()
+            } label: {
+                VStack(spacing: 3) {
+                    Image(systemName: SharedStore.shared.apiKey.isEmpty ? "key" : "key.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text(SharedStore.shared.apiKey.isEmpty ? "Key" : "Key ✓")
+                        .font(.caption2.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 3)
+        .frame(height: 60)
+    }
+
+    private func quickToggle(title: String, systemName: String, isOn: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 3) {
+                Image(systemName: systemName)
+                    .font(.system(size: 15, weight: .semibold))
+                Text(title)
+                    .font(.caption2.weight(.semibold))
+            }
+            .foregroundStyle(isOn ? Color.primary : Color.secondary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(
+                isOn ? Color.green.opacity(0.18) : Color(uiColor: .systemBackground),
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var clipboardStrip: some View {
